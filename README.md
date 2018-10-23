@@ -2,9 +2,9 @@
 
 **Introduction**
 
-This repository contain all the python code on which I will work for 
-my internship in Postech. It is a three months intership in the robotic 
-laboratory of Postech 
+This repository contain all the python code for te first part of my master thesis
+in Kyutech, Japan. This is a Pose estimation applied same as my other repo : Stacked-hourglass-network-for-sementic-keypoints-detection
+but applied for an other object : a mug
 
 
 
