@@ -4,7 +4,6 @@ TRAIN LAUNCHER
 """
 
 import configparser
-#from hourglass_tiny_vic import HourglassModel
 from python_code.hourglassdann_v20 import HourglassModel
 from python_code.datagen import DataGenerator
 
@@ -14,6 +13,7 @@ def process_config(conf_file):
 	params = {}
 	config = configparser.ConfigParser()
 	config.read(conf_file)
+
 
 	for section in config.sections():
 		if section == 'DataSetHG':
@@ -36,8 +36,7 @@ def process_config(conf_file):
 
 if __name__ == '__main__':
     print('--Parsing Config File')
-    params = process_config('config.cfg')
-
+    params = process_config('python_code\\config.cfg')
     print('--Creating Dataset')
     dataset = DataGenerator(params['joint_list'], params['img_directory'], params['training_txt_file'], remove_joints=params['remove_joints'])
     dataset._create_train_table()

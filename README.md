@@ -6,9 +6,9 @@ This repository contain all the python code for te first part of my master thesi
 in Kyutech, Japan. This is a Pose estimation applied same as my other repo : Stacked-hourglass-network-for-sementic-keypoints-detection
 but applied for an other object : a mug
 
+Work In Progress
 
 
-TODO : implement the domain adversarial training on a stacked hourglass network
 
 **Important papers**
 
