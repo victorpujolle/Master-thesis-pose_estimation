@@ -106,33 +106,32 @@ class DataGenerator():
         self.data_dict = {}
         input_file = open(self.train_data_file, 'r')
         print('READING TRAIN DATA')
-        i = 0
         for line in input_file:
-            print(i)
             line = line.strip()
             line = line.split(' ')
-            box = list(map(int,line[1:5]))
-            joints = list(map(int,line[5:]))
+            name = line[0]
+            #box = list(map(int,line[1:5]))
+            joints = list(map(int,line[1:]))
             if self.toReduce:
                 joints = self._reduce_joints(joints)
             if joints == [-1] * len(joints):
                 self.no_intel.append(name)
             else:
-                print(joints)
-                joints = np.reshape(joints, (-1,2))
+                joints = np.reshape(np.array(joints), (-1,2))
                 w = [1] * joints.shape[0]
                 for i in range(joints.shape[0]):
                     if np.array_equal(joints[i], [-1,-1]):
                         w[i] = 0
 
                 #if all box and joint are 0, there is no object and data_dict[name] should be zero
-                if np.amax(box) == 0 and np.amax(joints) == 0:
-                    w = [0] * joints.shape[0]
-                    self.data_dict[name] = {'box': box, 'joints': joints, 'weights': w}
-                    self.train_table.append(name)
-                else:
-                    self.data_dict[name] = {'box' : box, 'joints' : joints, 'weights' : w}
-                    self.train_table.append(name)
+                #if np.amax(box) == 0 and np.amax(joints) == 0:
+                #    w = [0] * joints.shape[0]
+                #    self.data_dict[name] = {'box': box, 'joints': joints, 'weights': w}
+                #    self.train_table.append(name)
+                #else:
+                self.data_dict[name] = {'joints': joints, 'weights': w}
+                #self.data_dict[name] = {'box' : box, 'joints' : joints, 'weights' : w}
+                self.train_table.append(name)
         input_file.close()
     
     def _randomize(self):
@@ -404,17 +403,20 @@ class DataGenerator():
             realN=0
             blenderN=0
             while i < batch_size:
-                try:
+                #try:
                     if sample_set == 'train':
                         name = random.choice(self.train_set)
                     elif sample_set == 'valid':
                         name = random.choice(self.valid_set)
+
                     joints = self.data_dict[name]['joints']+np.asarray([0,80])
                     joints[self.data_dict[name]['joints']==-1]=-1
                     box = [0,0,639,639]
                     weight = np.asarray(self.data_dict[name]['weights'])
-                    train_weights[i] = weight 
-                    img =  cv2.copyMakeBorder(self.open_img(name),80,80,0,0,cv2.BORDER_REPLICATE)
+                    train_weights[i] = weight
+                    #img =  cv2.copyMakeBorder(self.open_img(name),80,80,0,0,cv2.BORDER_REPLICATE)
+
+                    img = self.open_img(name)
                     padd, cbox = self._crop_data(img.shape[0], img.shape[1], box, joints, boxp = 0.2)
                     new_j = self._relative_joints(cbox,padd, joints, to_size=64)
                     hm = self._generate_hm(64, 64, new_j, 64, weight)
@@ -441,8 +443,8 @@ class DataGenerator():
                         realN=realN+1
                     
                     i = i + 1
-                except :
-                    print('error file: ', name)
+                #except :
+                 #   print('error file: ', name)
             print('blender data:'+str(blenderN)+'/real data:'+str(realN))
             yield train_img, train_gtmap, train_weights, batch_gt_domain_ids
                     

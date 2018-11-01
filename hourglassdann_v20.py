@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import datetime
 import os
-from python_code.flip_gradient import flip_gradient
+from flip_gradient import flip_gradient
 
 
 class HourglassModel:
@@ -84,7 +84,6 @@ class HourglassModel:
         print('---Graph : Done (' + str(int(abs(graphTime - inputTime))) + ' sec.)')
 
         with tf.name_scope('loss'):
-
             hm_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 logits=self.output,
                 labels=self.gtMaps
@@ -100,10 +99,10 @@ class HourglassModel:
 
             # gamma implemantation
             #gamma = 0.1
-            #hm_loss = (hm_loss - (1 - gamma) * (1 - tf.reshape(self.gtDomain, [4, 1, 1, 1, 1])) * hm_loss) * (1 + gamma) / (2 * gamma)
+            #hm_loss2 = (hm_loss2 - (1 - gamma) * (1 - tf.reshape(self.gtDomain, [4, 1, 1, 1, 1])) * hm_loss2) * (1 + gamma) / (2 * gamma)
             #domain_loss = (domain_loss - (1 - gamma) * (1 - self.gtDomain) * domain_loss) * (1 + gamma) / (2 * gamma)
 
-            self.loss = tf.reduce_mean(hm_loss, name='cross_entropy_heatmap_loss') + tf.reduce_mean(domain_loss, name='cross_entropy_domain_loss')
+            self.loss = tf.reduce_mean(hm_loss, name='cross_entropy_heatmap_loss') #+ tf.reduce_mean(domain_loss, name='cross_entropy_domain_loss')
 
         lossTime = time.time()
         print('---Loss : Done (' + str(int(abs(graphTime - lossTime))) + ' sec.)')
@@ -228,13 +227,13 @@ class HourglassModel:
                     sys.stdout.write('\r Train: {0}>'.format("=" * num) + "{0}>".format(" " * (20 - num)) + ' || ' + str(epoch) + '/' + str(nEpochs) + ' Epochs || ' + str(percent)[:4] + '%' + ' -cost: ' + str(cost)[:6] + ' -avg_loss: ' + str(avg_cost)[:5] + ' -timeToEnd: ' + str(tToEpoch) + ' sec.')
                     sys.stdout.flush()
 
-                    img_train, gt_train, weight_train, gt_domain, gt_feature = next(self.generator)
+                    img_train, gt_train, weight_train, gt_domain = next(self.generator)
 
                     if i % saveStep == 0:
                         _, c, summary = self.Session.run(
                             [self.train_rmsprop, self.loss, self.train_op],
                             feed_dict={self.img: img_train, self.gtMaps: gt_train,
-                            self.gtDomain: gt_domain, self.gt_feature: gt_feature}
+                            self.gtDomain: gt_domain}
                         )
 
                         # Save summary (Loss + Accuracy)
@@ -245,7 +244,7 @@ class HourglassModel:
                         _, c, = self.Session.run(
                             [self.train_rmsprop, self.loss],
                             feed_dict={self.img: img_train, self.gtMaps: gt_train,
-                            self.gtDomain: gt_domain, self.gt_feature: gt_feature}
+                            self.gtDomain: gt_domain}
                         )
 
                         #print('hm_loss norm cross entropy : ', hm_loss)
@@ -409,14 +408,14 @@ class HourglassModel:
                 r3 = self._residual(r2, numOut=self.nFeat, name='r3')
 
             # Storage Table
-            hg = [None] * self.nStack   # hourglass net
-            ll = [None] * self.nStack   # convolutional net
-            ll_ = [None] * self.nStack  # convolutional net
-            drop = [None] * self.nStack # dropout layer
-            out = [None] * self.nStack  # output layer
-            out_ = [None] * self.nStack # output layer
-            sum_ = [None] * self.nStack # summation of out_, ll and sum[i-1]
-            domain = [None] * self.nStack
+            hg = [None] * self.nStack     # hourglass net
+            ll = [None] * self.nStack     # convolutional net
+            ll_ = [None] * self.nStack    # convolutional net
+            drop = [None] * self.nStack   # dropout layer
+            out = [None] * self.nStack    # output layer
+            out_ = [None] * self.nStack   # output layer
+            sum_ = [None] * self.nStack   # summation of out_, ll and sum[i-1]
+            domain = [None] * self.nStack # the domain input
 
             with tf.name_scope('stacks'):
                 with tf.name_scope('stack_0'):
@@ -467,67 +466,16 @@ class HourglassModel:
                 stack_out = tf.layers.flatten(tf.stack(out, axis=1))
                 flipped = flip_gradient(stack_out)
 
-                dense1 = tf.layers.dense(
-                    inputs=flipped,
-                    units=1024,
-                    activation=None
-                )
-
-                dropout1 = tf.layers.dropout(
-                    inputs=dense1,
-                    rate=0.4
-                )
-
-                dense2 = tf.layers.dense(
-                    inputs=dropout1,
-                    units=1024,
-                    activation=None
-                )
-
-                dropout2 = tf.layers.dropout(
-                    inputs=dense2,
-                    rate=0.4
-                )
+                domain_class = self._dense_drop(inputs=flipped, units=1024, activation=None, dropout_rate=0.2, n=3)
 
                 domain_logits= tf.nn.sigmoid(tf.contrib.layers.fully_connected(
-                    inputs=dropout2,
+                    inputs=domain_class,
                     num_outputs=1,
-                ))
-
-            with tf.name_scope('features_classifier'):
-            # feature classifier
-                stack_out = tf.layers.flatten(tf.stack(out, axis=1))
-
-                dense1 = tf.layers.dense(
-                    inputs=stack_out,
-                    units=1024,
-                    activation=None
-                )
-
-                dropout1 = tf.layers.dropout(
-                    inputs=dense1,
-                    rate=0.4
-                )
-
-                dense2 = tf.layers.dense(
-                    inputs=dropout1,
-                    units=1024,
-                    activation=None
-                )
-
-                dropout2 = tf.layers.dropout(
-                    inputs=dense2,
-                    rate=0.4
-                )
-
-                features_logits = tf.nn.sigmoid(tf.contrib.layers.fully_connected(
-                    inputs=dropout2,
-                    num_outputs=2,
                 ))
 
             # return of the heatmap and the domain
             #return tf.stack(out, axis=1, name='final_output'), tf.contrib.layers.fully_connected(flip_gradient(tf.stack(domain)), num_outputs=1)
-            return tf.stack(out, axis=1, name='final_output'), domain_logits, features_logits
+            return tf.stack(out, axis=1, name='final_output'), domain_logits
 
 
     def record_training(self, record):
@@ -563,6 +511,28 @@ class HourglassModel:
                 if load is not None:
                     self.saver.restore(self.Session, load)
                 self._train(nEpochs, epochSize, saveStep, validIter=10)
+
+
+    def _dense_drop(self, inputs, units, activation, dropout_rate, n, name='dense_dropout_block'):
+        """dense with dropout block
+        Args:
+            inputs: Input Tensor
+            dropout_rate: dropout rate
+            n: number of layers
+            name: Name of the block
+        """
+
+
+        with tf.name_scope(name):
+            # first dense layer
+            dense1 = tf.layers.dense(inputs=inputs, units=units, activation=activation)
+            # first drop layer
+            dropout1 = tf.layers.dropout(inputs=dense1, rate=dropout_rate)
+
+            if n == 1:
+                return dropout1
+            else:
+                return self._dense_drop(inputs=dropout1,units=units, activation=activation, dropout_rate=dropout_rate, n=n-1)
 
 
     def _hourglass(self, inputs, n, numOut, name='hourglass'):
@@ -692,12 +662,4 @@ class HourglassModel:
                 with tf.device(self.cpu):
                     tf.summary.histogram('weights_summary', kernel, collections=['weight'])
 
-            return conv
-
-
-
-
-
-
-
-
+        return conv
