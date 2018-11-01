@@ -4,8 +4,8 @@ TRAIN LAUNCHER
 """
 
 import configparser
-from python_code.hourglassdann_v20 import HourglassModel
-from python_code.datagen import DataGenerator
+from hourglassdann_v20 import HourglassModel
+from datagen import DataGenerator
 
 def process_config(conf_file):
 	"""
@@ -36,7 +36,7 @@ def process_config(conf_file):
 
 if __name__ == '__main__':
     print('--Parsing Config File')
-    params = process_config('python_code\\config.cfg')
+    params = process_config('config.cfg')
     print('--Creating Dataset')
     dataset = DataGenerator(params['joint_list'], params['img_directory'], params['training_txt_file'], remove_joints=params['remove_joints'])
     dataset._create_train_table()
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     #print(dataset.data_dict)
     #model = HourglassModel(nFeat=params['nfeats'], nStack=params['nstacks'], nModules=params['nmodules'], nLow=params['nlow'], outputDim=params['num_joints'], batch_size=params['batch_size'], attention = params['mcam'], training=True, drop_rate= params['dropout_rate'], lear_rate=params['learning_rate'], decay=params['learning_rate_decay'], decay_step=params['decay_step'], dataset=dataset, name=params['name'], logdir_train=params['log_dir_train'], logdir_test=params['log_dir_test'], tiny= params['tiny'], w_loss=params['weighted_loss'], joints= params['joint_list'], modif=False)
-    model = HourglassModel(nFeat=params['nfeats'], nStack=params['nstacks'], nModules=params['nmodules'], nLow=params['nlow'], outputDim=params['num_joints'], batch_size=params['batch_size'], drop_rate=params['dropout_rate'], lear_rate=params['learning_rate'], decay=params['learning_rate_decay'], decay_step=params['decay_step'], dataset=dataset, training=True, logdir_train=params['log_dir_train'], logdir_test=params['log_dir_test'],name=params['name'] ,joints=params['joint_list'])
+    model = HourglassModel(nFeat=params['nfeats'], nStack=params['nstacks'], nModules=params['nmodules'], nLow=params['nlow'], outputDim=params['num_joints'], batch_size=params['batch_size'], drop_rate=params['dropout_rate'], lear_rate=params['learning_rate'], decay=params['learning_rate_decay'], decay_step=params['decay_step'], dataset=dataset, training=True, trained_dir=params['trained_dir'], logdir_train=params['log_dir_train'], logdir_test=params['log_dir_test'],name=params['name'] ,joints=params['joint_list'])
     model.generate_model()
     model.training_init(nEpochs=params['nepochs'], epochSize=params['epoch_size'], saveStep=params['saver_step'], dataset = None)
 

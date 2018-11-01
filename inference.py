@@ -32,10 +32,10 @@ sys.path.append('./')
 
 from time import time
 import numpy as np
-from python_code.train_launcher import process_config
+from train_launcher import process_config
 import cv2
-from python_code.predictclass2 import PredictProcessor
-from python_code.filters import VideoFilters
+from predictclass2 import PredictProcessor
+from filters import VideoFilters
 import os
 
 class Inference():
@@ -146,11 +146,11 @@ class Inference():
 				
 
 if __name__ == '__main__':
-	infer=Inference(config_file = 'config.cfg', model = '../trained_networks/hg_refined_200_200', yoloModel = 'YOLO_small.ckpt')
-	val_path='../datasets/val_demo'
-	result_path='../datasets/val_demo_result'
-# 	val_path='datasets/val
-# 	result_path='datasets/val_result'
+	print('--Parsing Config File')
+	params = process_config('config.cfg')
+	infer=Inference(config_file = 'config.cfg', model = os.path.join(params['trained_dir'],params['name']), yoloModel = 'YOLO_small.ckpt')
+	val_path=params['valid_img_directory']
+	result_path=params['result_img_directory']
 	val_list=os.listdir(val_path)
 	for file in val_list:
 		if ('.png' in file or '.jpg' in file or '.bmp' in file):

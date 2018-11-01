@@ -32,16 +32,16 @@ import sys
 
 sys.path.append('./')
 
-from hourglass_dann_v10 import HourglassModel
+from hourglassdann_v20 import HourglassModel
 from time import time, sleep
 import numpy as np
 import tensorflow as tf
 import scipy.io
-from python_code.train_launcher import process_config
+from train_launcher import process_config
 import cv2
 # from yolo_tiny_net import YoloTinyNet
-from python_code.yolo_net import YOLONet
-from python_code import config as cfg
+from yolo_net import YOLONet
+import config as cfg
 import threading
 
 

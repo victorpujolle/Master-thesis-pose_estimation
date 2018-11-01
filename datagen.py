@@ -83,6 +83,9 @@ class DataGenerator():
         self.letter = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N']
         self.img_dir = img_dir
         self.train_data_file = train_data_file
+        print()
+        print(os.getcwd())
+        print(img_dir)
         self.images = os.listdir(img_dir)
     
     # --------------------Generator Initialization Methods ---------------------

@@ -15,7 +15,7 @@ class HourglassModel:
 
     def __init__(self, nFeat=256, nStack=2, nModules=1, nLow=6, outputDim=8, batch_size=4, drop_rate=0.2,
                  lear_rate=2.5e-4, decay=0.96, decay_step=2000, dataset=None, training=True, w_summary=True,
-                 logdir_train=None, logdir_test=None, w_loss=False,
+                 trained_dir='//', logdir_train=None, logdir_test=None, w_loss=False,
                  name='hourglass', joints=['fru','frd','flu','fld','bru','brd','blu','bld']):
 
         """ Initializer
@@ -50,6 +50,7 @@ class HourglassModel:
         self.dataset = dataset
         self.cpu = '/cpu:0'
         self.gpu = '/gpu:0'
+        self.trained_dir = trained_dir
         self.logdir_train = logdir_train
         self.logdir_test = logdir_test
         self.joints = joints
@@ -239,6 +240,7 @@ class HourglassModel:
                         # Save summary (Loss + Accuracy)
                         self.train_summary.add_summary(summary, epoch * epochSize + i)
                         self.train_summary.flush()
+                        
 
                     else:
                         _, c, = self.Session.run(
@@ -267,7 +269,7 @@ class HourglassModel:
                 print('Epoch ' + str(epoch) + '/' + str(nEpochs) + ' done in ' + str(int(epochfinishTime - epochstartTime)) + ' sec.' + ' -avg_time/batch: ' + str(((epochfinishTime - epochstartTime) / epochSize))[:4] + ' sec.')
 
                 with tf.name_scope('save'):
-                    self.saver.save(self.Session, os.path.join(os.getcwd(), str(self.name + '_' + str(epoch + 1))))
+                    self.saver.save(self.Session, os.path.join(self.trained_dir, str(self.name + '_' + str(epoch + 1))))
 
                 self.resume['loss'].append(cost)
 

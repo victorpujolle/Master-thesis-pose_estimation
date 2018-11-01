@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from python_code import config as cfg
+import config as cfg
 
 slim = tf.contrib.slim
 
