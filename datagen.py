@@ -49,7 +49,7 @@ class DataGenerator():
     
     How to generate Dataset:
         Create a TEXT file with the following structure:
-            image_name.jpg[LETTER] box_xmin box_ymin box_xmax b_ymax joints
+            image_name.jpg[LETTER] joints
             [LETTER]:
                 One image can contain multiple person. To use the same image
                 finish the image with a CAPITAL letter [A,B,C...] for 
@@ -114,7 +114,7 @@ class DataGenerator():
             line = line.split(' ')
             name = line[0]
             #box = list(map(int,line[1:5]))
-            joints = list(map(int,line[1:]))
+            joints = list(map(int, line[1:]))
             if self.toReduce:
                 joints = self._reduce_joints(joints)
             if joints == [-1] * len(joints):
@@ -123,7 +123,7 @@ class DataGenerator():
                 joints = np.reshape(np.array(joints), (-1,2))
                 w = [1] * joints.shape[0]
                 for i in range(joints.shape[0]):
-                    if np.array_equal(joints[i], [-1,-1]):
+                    if  np.min(joints[i]) < 0:
                         w[i] = 0
 
                 #if all box and joint are 0, there is no object and data_dict[name] should be zero
@@ -135,6 +135,7 @@ class DataGenerator():
                 self.data_dict[name] = {'joints': joints, 'weights': w}
                 #self.data_dict[name] = {'box' : box, 'joints' : joints, 'weights' : w}
                 self.train_table.append(name)
+        print(self.data_dict)
         input_file.close()
     
     def _randomize(self):
@@ -156,7 +157,7 @@ class DataGenerator():
         """ Returns a List of Samples
         Args:
             batch_size    : Number of sample wanted
-            set                : Set to use (valid/train)
+            set           : Set to use (valid/train)
         """
         list_file = []
         for i in range(batch_size):
