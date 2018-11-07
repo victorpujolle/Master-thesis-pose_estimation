@@ -1,32 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Deep Human Pose Estimation
 
-Project by Walid Benbihi
-MSc Individual Project
-Imperial College
-Created on Mon Sep  4 18:11:46 2017
-
-@author: Walid Benbihi
-@mail : w.benbihi(at)gmail.com
-@github : https://github.com/wbenbihi/hourglasstensorlfow/
-
-Abstract:
-	This python code creates a Stacked Hourglass Model
-	(Credits : A.Newell et al.)
-	(Paper : https://arxiv.org/abs/1603.06937)
-	
-	Code translated from 'anewell' github
-	Torch7(LUA) --> TensorFlow(PYTHON)
-	(Code : https://github.com/anewell/pose-hg-train)
-	
-	Modification are made and explained in the report
-	Goal : Achieve Real Time detection (Webcam)
-	----- Modifications made to obtain faster results (trade off speed/accuracy)
-	
-	This work is free of use, please cite the author if you use it!
-
-"""
 import sys
 sys.path.append('./')
 
@@ -148,14 +121,15 @@ class Inference():
 if __name__ == '__main__':
 	print('--Parsing Config File')
 	params = process_config('config.cfg')
-	infer=Inference(config_file = 'config.cfg', model = os.path.join(params['trained_dir'],params['name']), yoloModel = 'YOLO_small.ckpt')
+	infer=Inference(config_file = 'config.cfg', model = os.path.join(params['trained_dir'],params['name_trained']), yoloModel = 'YOLO_small.ckpt')
 	val_path=params['valid_img_directory']
 	result_path=params['result_img_directory']
 	val_list=os.listdir(val_path)
 	for file in val_list:
 		if ('.png' in file or '.jpg' in file or '.bmp' in file):
 			file_path = val_path+'/'+ file
-			img = cv2.resize(cv2.copyMakeBorder(cv2.imread(file_path),80,80,0,0,cv2.BORDER_REPLICATE),(256,256))
+			#img = cv2.resize(cv2.copyMakeBorder(cv2.imread(file_path),80,80,0,0,cv2.BORDER_REPLICATE),(256,256))
+			img = cv2.imread(file_path)
 			img = img[:,:,[2,1,0]]
 			out=np.squeeze(infer.predictHM(img))
 			N=out.shape[2]

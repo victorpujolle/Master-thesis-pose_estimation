@@ -71,7 +71,7 @@ class PredictProcessor():
 
         self.graph = tf.Graph()
         self.src = 0
-        self.cam_res = (480, 640)
+        self.cam_res = (256, 256)
 
     def color_palette(self):
         """ Creates a color palette dictionnary
