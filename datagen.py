@@ -107,6 +107,7 @@ class DataGenerator():
         self.train_table = []
         self.no_intel = []
         self.data_dict = {}
+        self.data_dict_bb = {}
         input_file = open(self.train_data_file, 'r')
         print('READING TRAIN DATA')
         for line in input_file:
@@ -114,17 +115,23 @@ class DataGenerator():
             line = line.split(' ')
             name = line[0]
             #box = list(map(int,line[1:5]))
-            joints = list(map(int, line[1:]))
+            joints = list(map(int, line[1:17]))
+            bb = list(map(int, line[17:]))
             if self.toReduce:
                 joints = self._reduce_joints(joints)
             if joints == [-1] * len(joints):
                 self.no_intel.append(name)
             else:
                 joints = np.reshape(np.array(joints), (-1,2))
-                w = [1] * joints.shape[0]
+                bb = np.reshape(np.array(bb), (-1,2))
+                w1 = [1] * joints.shape[0]
+                w2 = [1] * bb.shape[0]
                 for i in range(joints.shape[0]):
                     if  np.min(joints[i]) < 0:
-                        w[i] = 0
+                        w1[i] = 0
+                for i in range(bb.shape[0]):
+                    if  np.min(bb[i]) < 0:
+                        w2[i] = 0
 
                 #if all box and joint are 0, there is no object and data_dict[name] should be zero
                 #if np.amax(box) == 0 and np.amax(joints) == 0:
@@ -132,10 +139,9 @@ class DataGenerator():
                 #    self.data_dict[name] = {'box': box, 'joints': joints, 'weights': w}
                 #    self.train_table.append(name)
                 #else:
-                self.data_dict[name] = {'joints': joints, 'weights': w}
+                self.data_dict[name] = {'joints': joints, 'weights': w1, 'bb': bb, 'weight_bb':w2}
                 #self.data_dict[name] = {'box' : box, 'joints' : joints, 'weights' : w}
                 self.train_table.append(name)
-        print(self.data_dict)
         input_file.close()
     
     def _randomize(self):
@@ -413,8 +419,13 @@ class DataGenerator():
                     elif sample_set == 'valid':
                         name = random.choice(self.valid_set)
 
-                    joints = self.data_dict[name]['joints']+np.asarray([0,80])
+                    joints = self.data_dict[name]['joints']
                     joints[self.data_dict[name]['joints']==-1]=-1
+
+                    bb = self.data_dict[name]['bb']
+                    bb[self.data_dict[name]['bb'] == -1] = -1
+                    # TODO : continuer à faire la gestion de la bounding box
+                    #print('\nici ----> \n',name,'\n',joints)
                     box = [0,0,639,639]
                     weight = np.asarray(self.data_dict[name]['weights'])
                     train_weights[i] = weight
