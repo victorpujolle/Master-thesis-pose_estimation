@@ -398,68 +398,134 @@ class DataGenerator():
                 print('Batch : ',time.time() - t, ' sec.')
             yield train_img, train_gtmap
             
-    def _aux_generator(self, batch_size = 16, stacks = 4, normalize = True, sample_set = 'train'):
-        """ Auxiliary Generator
+    def _aux_generator(self, batch_size = 16, stacks = 4, normalize = True, sample_set = 'train', train_type='kp'):
+        """ Create Generator for Training
         Args:
-            See Args section in self._generator
+            batch_size : Number of images per batch
+            stacks     : Number of stacks/module in the network
+            set        : Training/Testing/Validation set
+            normalize  : True to return Image Value between 0 and 1
+            _debug     : Boolean to test the computation time (/!\ Keep False)
+            train_type : 'kp' or 'bb', choose if you want to detect bounding box or keypoints
         """
+
         while True:
-            train_img = np.zeros((batch_size, 256,256,3), dtype = np.float32)
-            train_gtmap = np.zeros((batch_size, stacks, 64, 64, len(self.joints_list)), np.float32)
-            train_weights = np.zeros((batch_size, len(self.joints_list)), np.float32)
-            batch_gt_domain_ids = np.zeros(
+            if train_type == 'kp':
+                train_img = np.zeros((batch_size, 256,256,3), dtype = np.float32)
+                train_gtmap = np.zeros((batch_size, stacks, 64, 64, len(self.joints_list)), np.float32)
+
+                train_weights = np.zeros((batch_size, len(self.joints_list)), np.float32)
+
+                batch_gt_domain_ids = np.zeros(
                 (batch_size, 1), dtype=np.float32)
-            i = 0
-            realN=0
-            blenderN=0
-            while i < batch_size:
-                #try:
+                i = 0
+                realN=0
+                blenderN=0
+
+                while i < batch_size:
+                    #try:
+                        if sample_set == 'train':
+                            name = random.choice(self.train_set)
+                        elif sample_set == 'valid':
+                            name = random.choice(self.valid_set)
+
+                        joints = self.data_dict[name]['joints']
+                        joints[self.data_dict[name]['joints']==-1]=-1
+
+                        box = [0,0,639,639]
+
+                        weight = np.asarray(self.data_dict[name]['weights'])
+
+                        train_weights[i] = weight
+                        img = self.open_img(name)
+                        padd, cbox = self._crop_data(img.shape[0], img.shape[1], box, joints, boxp = 0.2)
+                        new_j = self._relative_joints(cbox,padd, joints, to_size=64)
+                        hm = self._generate_hm(64, 64, new_j, 64, weight)
+
+
+                        for hmi in range(hm.shape[2]):
+                            if sum(joints[hmi,:]==-1)>0:
+                                hm[:,:,hmi]=np.zeros([64,64])
+                        img = self._crop_img(img, padd, cbox)
+                        img = img.astype(np.uint8)
+                        img = scm.imresize(img, (256,256))
+                        img, hm = self._augment(img, hm)
+                        hm = np.expand_dims(hm, axis = 0)
+                        hm = np.repeat(hm, stacks, axis = 0)
+
+                        if normalize:
+                            train_img[i] = img.astype(np.float32) / 255
+                        else :
+                            train_img[i] = img.astype(np.float32)
+                        train_gtmap[i] = hm
+
+                        if "blender" in name:
+                            batch_gt_domain_ids[i] = 0
+                            blenderN=blenderN+1
+                        else:
+                            batch_gt_domain_ids[i] = 1
+                            realN=realN+1
+
+                        i = i + 1
+
+            if train_type == 'bb':
+                train_img = np.zeros((batch_size, 256, 256, 3), dtype=np.float32)
+                train_gtmap = np.zeros((batch_size, stacks, 64, 64, len(self.joints_list)), np.float32)
+
+                train_weights = np.zeros((batch_size, len(self.joints_list)), np.float32)
+
+                batch_gt_domain_ids = np.zeros(
+                    (batch_size, 1), dtype=np.float32)
+                i = 0
+                realN = 0
+                blenderN = 0
+
+                while i < batch_size:
+                    # try:
                     if sample_set == 'train':
                         name = random.choice(self.train_set)
                     elif sample_set == 'valid':
                         name = random.choice(self.valid_set)
 
-                    joints = self.data_dict[name]['joints']
-                    joints[self.data_dict[name]['joints']==-1]=-1
-
                     bb = self.data_dict[name]['bb']
                     bb[self.data_dict[name]['bb'] == -1] = -1
-                    # TODO : continuer à faire la gestion de la bounding box
-                    #print('\nici ----> \n',name,'\n',joints)
-                    box = [0,0,639,639]
-                    weight = np.asarray(self.data_dict[name]['weights'])
-                    train_weights[i] = weight
-                    #img =  cv2.copyMakeBorder(self.open_img(name),80,80,0,0,cv2.BORDER_REPLICATE)
+
+                    box = [0, 0, 639, 639]
+
+                    weight_bb = np.asarray(self.data_dict[name]['weight_bb'])
+
+                    train_weights[i] = weight_bb
 
                     img = self.open_img(name)
-                    padd, cbox = self._crop_data(img.shape[0], img.shape[1], box, joints, boxp = 0.2)
-                    new_j = self._relative_joints(cbox,padd, joints, to_size=64)
-                    hm = self._generate_hm(64, 64, new_j, 64, weight)
+                    padd, cbox = self._crop_data(img.shape[0], img.shape[1], box, bb, boxp=0.2)
+                    new_j = self._relative_joints(cbox, padd, bb, to_size=64)
+                    hm = self._generate_hm(64, 64, new_j, 64, weight_bb)
+
                     for hmi in range(hm.shape[2]):
-                        if sum(joints[hmi,:]==-1)>0:
-                            hm[:,:,hmi]=np.zeros([64,64])
+                        if sum(bb[hmi, :] == -1) > 0:
+                            hm[:, :, hmi] = np.zeros([64, 64])
                     img = self._crop_img(img, padd, cbox)
                     img = img.astype(np.uint8)
-                    img = scm.imresize(img, (256,256))
+                    img = scm.imresize(img, (256, 256))
                     img, hm = self._augment(img, hm)
-                    hm = np.expand_dims(hm, axis = 0)
-                    hm = np.repeat(hm, stacks, axis = 0)
+                    hm = np.expand_dims(hm, axis=0)
+                    hm = np.repeat(hm, stacks, axis=0)
+
                     if normalize:
                         train_img[i] = img.astype(np.float32) / 255
-                    else :
+                    else:
                         train_img[i] = img.astype(np.float32)
                     train_gtmap[i] = hm
-                    
-                    if "blender" in name:   
+
+                    if "blender" in name:
                         batch_gt_domain_ids[i] = 0
-                        blenderN=blenderN+1
-                    else: 
+                        blenderN = blenderN + 1
+                    else:
                         batch_gt_domain_ids[i] = 1
-                        realN=realN+1
-                    
+                        realN = realN + 1
+
                     i = i + 1
-                #except :
-                 #   print('error file: ', name)
+
             print('blender data:'+str(blenderN)+'/real data:'+str(realN))
             yield train_img, train_gtmap, train_weights, batch_gt_domain_ids
                     

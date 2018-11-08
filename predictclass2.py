@@ -67,7 +67,7 @@ class PredictProcessor():
                                drop_rate=self.params['dropout_rate'], lear_rate=self.params['learning_rate'],
                                decay=self.params['learning_rate_decay'], decay_step=self.params['decay_step'], dataset=None,
                                training=True, logdir_train=self.params['log_dir_train'], logdir_test=self.params['log_dir_test'],
-                               joints=self.params['joint_list'])
+                               joints=self.params['joint_list'], train_type=self.params['train_type'])
 
         self.graph = tf.Graph()
         self.src = 0

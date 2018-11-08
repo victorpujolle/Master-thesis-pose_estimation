@@ -16,7 +16,7 @@ class HourglassModel:
     def __init__(self, nFeat=256, nStack=2, nModules=1, nLow=6, outputDim=8, batch_size=4, drop_rate=0.2,
                  lear_rate=2.5e-4, decay=0.96, decay_step=2000, dataset=None, training=True, w_summary=True,
                  trained_dir='//', logdir_train=None, logdir_test=None, w_loss=False,
-                 name='hourglass', joints=['fru','frd','flu','fld','bru','brd','blu','bld']):
+                 name='hourglass', joints=['fru','frd','flu','fld','bru','brd','blu','bld'], train_type='kp'):
 
         """ Initializer
          nStack              : number of stacks (stage/Hourglass modules)
@@ -54,6 +54,7 @@ class HourglassModel:
         self.logdir_train = logdir_train
         self.logdir_test = logdir_test
         self.joints = joints
+        self.train_type = train_type
 
 
     def generate_model(self):
@@ -201,8 +202,8 @@ class HourglassModel:
         """
 
         with tf.name_scope('train'):
-            self.generator = self.dataset._aux_generator(self.batchSize, self.nStack, normalize=True, sample_set='train')
-            self.valid_gen = self.dataset._aux_generator(self.batchSize, self.nStack, normalize=True, sample_set='valid')
+            self.generator = self.dataset._aux_generator(self.batchSize, self.nStack, normalize=True, sample_set='train', train_type=self.train_type)
+            self.valid_gen = self.dataset._aux_generator(self.batchSize, self.nStack, normalize=True, sample_set='valid', train_type=self.train_type)
 
             startTime = time.time()
             self.resume = {}
